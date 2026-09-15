@@ -1,17 +1,23 @@
-# CS571 Class Helper Setup
+# Class Survival
 
-This project provides a small workflow for:
+This project helps with:
 
-* resizing/repositioning the Zoom window
-* capturing lecture slides
-* OCRing screenshots
-* generating a GPT-ready prompt
-* transcribing lecture audio locally with `whisper.cpp`
+resizing/repositioning Zoom
 
-The intended project structure is:
+capturing lecture slides
 
-```text
-CS571/
+OCRing slides
+
+transcribing Zoom/system audio
+
+generating a GPT-ready prompt from slides + recent transcript context
+
+Project Structure
+
+Root/
+├── .venv/
+├── whisper.cpp/
+│
 ├── zoom_resize.py
 ├── screen_shot.py
 ├── text_reader.py
@@ -23,583 +29,485 @@ CS571/
 │   ├── prompt.sh
 │   └── transcript.sh
 │
-├── output/
-│   ├── Class4/
-│   │   ├── Slides_001.png
-│   │   ├── Slides_002.png
-│   │   └── ...
-│   ├── audio/
-│   ├── text.txt
-│   ├── prompt.txt
-│   └── transcript.txt
-│
-└── whisper.cpp/
-```
+└── output/
+    ├── Class4/
+    │   ├── Slide_001.png
+    │   ├── Slide_002.png
+    │   └── ...
+    │
+    ├── audio/
+    │   └── chunks/
+    │       ├── chunk_00000.wav
+    │       ├── chunk_00000.txt
+    │       ├── chunk_00001.wav
+    │       ├── chunk_00001.txt
+    │       └── ...
+    │
+    ├── text.txt
+    ├── transcript.txt
+    └── prompt.txt
 
-## 1. Install Homebrew dependencies
+1. Install Homebrew Dependencies
 
-Install Tesseract, FFmpeg, CMake, and BlackHole:
+Install the required system tools:
 
-```bash
-brew install tesseract ffmpeg cmake
+brew install tesseract
+brew install ffmpeg
+brew install cmake
+
+Install BlackHole:
+
 brew install --cask blackhole-2ch
-```
 
-BlackHole may require a reboot after installation.
+You may need to restart the Mac after installing BlackHole.
 
-Tesseract is used for slide OCR.
+2. Create the Python Virtual Environment
 
-FFmpeg is used for converting audio into a format Whisper can process.
+From the Root folder:
 
-BlackHole allows macOS system audio, including Zoom audio, to be routed into a recording/transcription workflow.
-
-## 2. Create the Python virtual environment
-
-From the `CS571` directory:
-
-```bash
 python3 -m venv .venv
-```
 
-Activate it:
+Install the Python dependencies:
 
-```bash
-source .venv/bin/activate
-```
+./.venv/bin/python -m pip install --upgrade pip
+./.venv/bin/python -m pip install -r requirements.txt
 
-Install Python dependencies:
+requirements.txt:
 
-```bash
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-```
-
-The `requirements.txt` file should contain:
-
-```text
 Pillow
 pytesseract
-```
 
-The transcription system does not use the Python Whisper package.
+You can activate the venv manually if desired:
 
-## 3. Configure macOS permissions
+source .venv/bin/activate
 
-The project needs macOS permission to manipulate Zoom and capture the screen.
+This is not required for the normal shell scripts if they call .venv/bin/python directly.
+
+3. Configure macOS Permissions
 
 Open:
 
-```text
 System Settings
 → Privacy & Security
 → Accessibility
-```
 
-Enable the application that runs the scripts, such as:
+Enable the application you use to run the scripts, such as:
 
-```text
 Terminal
 Visual Studio Code
 iTerm
-```
 
-Also open:
+Also enable the same application under:
 
-```text
 System Settings
 → Privacy & Security
 → Screen & System Audio Recording
-```
 
-and enable the same application.
+After changing permissions, fully quit and reopen the application.
 
-Completely quit and reopen the application after changing permissions.
+Test Accessibility access:
 
-You can test Accessibility access with:
-
-```bash
 osascript -e 'tell application "System Events" to get name of every process'
-```
 
-## 4. Configure Zoom positioning
+4. Configure Zoom Resizing
 
-`zoom_resize.py` controls the Zoom window position and dimensions.
+Edit zoom_resize.py.
 
-Example configuration:
+Example:
 
-```python
 X = 0
 Y = 0
 WIDTH = 780
 HEIGHT = 720
-```
 
-The script searches for either:
+The script looks for:
 
-```text
 Zoom Workplace
-```
 
 or:
 
-```text
 zoom.us
-```
 
-and resizes the front Zoom window.
+5. Configure Screenshot Cropping
 
-## 5. Configure screenshot cropping
-
-`screen_shot.py` controls which part of the screen becomes the slide screenshot.
+Edit screen_shot.py.
 
 Example:
 
-```python
 X = 0
 Y = 300
 BOTTOM = 50
+
 WIDTH = 780
 HEIGHT = 720 - Y - BOTTOM
-```
 
-The screenshot script automatically generates names such as:
+Screenshots should be automatically numbered:
 
-```text
-Slides_001.png
-Slides_002.png
-Slides_003.png
-```
+Slide_001.png
+Slide_002.png
+Slide_003.png
 
-without overwriting previous screenshots.
+6. Make the Shell Scripts Executable
 
-## 6. Configure `capture.sh`
+Run once:
 
-The capture command takes a class number.
-
-Example:
-
-```bash
-./sh/capture.sh 4
-```
-
-This should:
-
-```text
-1. resize/reposition Zoom
-2. take a screenshot
-3. save it under output/Class4/
-```
-
-Example `capture.sh`:
-
-```bash
-#!/bin/bash
-
-set -e
-
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-
-CLASS="${1:-4}"
-FOLDER="Class${CLASS}"
-
-cd "$ROOT_DIR"
-
-python3 zoom_resize.py
-python3 screen_shot.py "output/$FOLDER"
-```
-
-Make it executable:
-
-```bash
 chmod +x sh/capture.sh
-```
+chmod +x sh/prompt.sh
+chmod +x sh/transcript.sh
+
+7. Capture Slides
+
+Capture a slide for Class 4:
+
+./sh/capture.sh 4
+
+This:
+
+1. resizes/repositions Zoom
+2. captures the configured screen region
+3. saves the screenshot to output/Class4/
 
 Example:
 
-```bash
-./sh/capture.sh 4
-```
+output/Class4/Slide_001.png
 
-produces:
+Running the same command again creates:
 
-```text
-output/Class4/Slides_001.png
-```
+output/Class4/Slide_002.png
 
-Running it again produces:
+To use another class:
 
-```text
-output/Class4/Slides_002.png
-```
+./sh/capture.sh 5
 
-## 7. OCR screenshots
+which saves into:
 
-`text_reader.py` accepts either:
+output/Class5/
 
-* an individual PNG
-* an entire directory containing PNGs
+8. OCR Slides and Generate a Prompt
 
-Examples:
+Use the entire Class 4 folder:
 
-```bash
-python3 text_reader.py output/Class4
-```
-
-or:
-
-```bash
-python3 text_reader.py output/Class4/Slides_003.png
-```
-
-The OCR result is always written to:
-
-```text
-output/text.txt
-```
-
-The script performs grayscale conversion and thresholding before sending the image to Tesseract.
-
-It also removes some common OCR garbage.
-
-## 8. Configure `prompt.sh`
-
-`prompt.sh` accepts:
-
-```text
-CLASS
-```
-
-or:
-
-```text
-CLASS SLIDE
-```
-
-For example:
-
-```bash
 ./sh/prompt.sh 4
-```
 
-OCRs all screenshots in:
+This OCRs every PNG inside:
 
-```text
 output/Class4/
-```
 
-while:
+To use only one slide:
 
-```bash
 ./sh/prompt.sh 4 3
-```
 
-only OCRs:
+This uses:
 
-```text
-output/Class4/Slides_003.png
-```
+output/Class4/Slide_003.png
 
-Example `prompt.sh`:
+The OCR output is written to:
 
-```bash
-#!/bin/bash
-
-set -e
-
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-
-CLASS="${1:-4}"
-SLIDE="$2"
-
-CLASS_FOLDER="Class${CLASS}"
-
-cd "$ROOT_DIR"
-
-if [ -z "$SLIDE" ]; then
-    INPUT_PATH="output/$CLASS_FOLDER"
-else
-    SLIDE_FILE=$(printf "Slides_%03d.png" "$SLIDE")
-    INPUT_PATH="output/$CLASS_FOLDER/$SLIDE_FILE"
-fi
-
-python3 text_reader.py "$INPUT_PATH"
-python3 prompt.py
-
-echo "Generated output/prompt.txt"
-```
-
-Make it executable:
-
-```bash
-chmod +x sh/prompt.sh
-```
+output/text.txt
 
 The final GPT-ready prompt is written to:
 
-```text
 output/prompt.txt
-```
 
-## 9. Install `whisper.cpp`
+prompt.py also includes the most recent transcript chunks when available.
 
-From the `CS571` directory:
+9. Install whisper.cpp
 
-```bash
+Clone it inside Root:
+
 git clone https://github.com/ggml-org/whisper.cpp.git
-```
 
-Enter it:
+Then:
 
-```bash
 cd whisper.cpp
-```
 
 Download the English base model:
 
-```bash
 sh ./models/download-ggml-model.sh base.en
-```
 
-The official project provides this model-download helper and uses CMake for its normal build flow.
+10. Build whisper.cpp on This Mac
 
-## 10. Build Whisper on this Intel Mac
+On this Intel Mac, the default Metal build hangs during initialization.
 
-On this machine, the normal Metal build hangs during initialization.
+Build without Metal:
 
-Build `whisper.cpp` with Metal disabled:
-
-```bash
 rm -rf build
 
 cmake -B build \
   -DGGML_METAL=OFF
 
 cmake --build build -j --config Release
-```
 
-`GGML_METAL` is enabled by default on Apple platforms, so explicitly disabling it forces the CPU-oriented build used here.
+Test it:
 
-Test it with the included sample:
-
-```bash
 ./build/bin/whisper-cli \
+  --no-gpu \
+  --no-timestamps \
   -m models/ggml-base.en.bin \
   -f samples/jfk.wav
-```
 
-If this generates a transcript, Whisper is working.
+Return to the project root:
 
-## 11. Convert audio for Whisper
+cd ..
 
-`whisper-cli` expects compatible audio such as a 16-bit WAV.
+11. Configure BlackHole
 
-For a Voice Memo or other `.m4a` file:
+Open:
 
-```bash
+Applications
+→ Utilities
+→ Audio MIDI Setup
+
+If the Audio Devices window is not visible:
+
+Window
+→ Show Audio Devices
+
+Click:
+
++
+→ Create Multi-Output Device
+
+Enable:
+
+MacBook Pro Speakers
+BlackHole 2ch
+
+Recommended configuration:
+
+Primary / Clock Source:
+MacBook Pro Speakers
+
+MacBook Pro Speakers:
+Drift Correction OFF
+
+BlackHole 2ch:
+Drift Correction ON
+
+Make sure both devices use the same sample rate, for example:
+
+48,000 Hz
+
+Then go to:
+
+System Settings
+→ Sound
+→ Output
+
+and select:
+
+Multi-Output Device
+
+This creates:
+
+Zoom / system audio
+        ↓
+Multi-Output Device
+        ├── MacBook Pro Speakers
+        └── BlackHole 2ch
+
+so you can hear the lecture while FFmpeg records it.
+
+12. Verify BlackHole
+
+List audio devices:
+
+ffmpeg -f avfoundation -list_devices true -i ""
+
+You should see something like:
+
+AVFoundation audio devices:
+[0] BlackHole 2ch
+[1] MacBook Pro Microphone
+...
+
+The exact BlackHole device number may vary.
+
+The script finds it automatically by name.
+
+13. Test System Audio Capture
+
+Record 10 seconds:
+
 ffmpeg \
-  -i input.m4a \
-  -ar 16000 \
+  -f avfoundation \
+  -i ":0" \
+  -t 10 \
   -ac 1 \
+  -ar 16000 \
   -c:a pcm_s16le \
-  output.wav
-```
+  test_blackhole.wav
 
-This converts the recording to:
+Replace 0 if BlackHole has another device index.
 
-```text
-16 kHz
-mono
-16-bit PCM WAV
-```
+Play Zoom or YouTube audio while recording.
 
-which matches the conversion recommended by the `whisper.cpp` project.
+Then:
 
-You can then transcribe it with:
+open test_blackhole.wav
 
-```bash
+You should hear the captured system audio.
+
+Test Whisper:
+
 ./whisper.cpp/build/bin/whisper-cli \
   --no-gpu \
   --no-timestamps \
   -m ./whisper.cpp/models/ggml-base.en.bin \
-  -f output.wav
-```
+  -f test_blackhole.wav
 
-## 12. Configure BlackHole for Zoom audio
-
-BlackHole allows system audio to be routed into another application while still allowing you to hear it.
-
-After installing BlackHole, open:
-
-```text
-Applications
-→ Utilities
-→ Audio MIDI Setup
-```
-
-Click:
-
-```text
-+
-→ Create Multi-Output Device
-```
-
-Enable:
-
-```text
-your headphones/speakers
-BlackHole 2ch
-```
-
-Use your normal speakers/headphones as the main clock source.
-
-Enable:
-
-```text
-Drift Correction
-```
-
-for BlackHole.
-
-Then select the Multi-Output Device as the Mac's sound output.
-
-This sends audio simultaneously to your headphones/speakers and BlackHole.
-
-## 13. Identify BlackHole's FFmpeg device
+14. Start Live Transcription
 
 Run:
 
-```bash
-ffmpeg -f avfoundation -list_devices true -i ""
-```
+./sh/transcript.sh
 
-Look under the audio devices for:
+The script:
 
-```text
-BlackHole 2ch
-```
+1. finds BlackHole automatically
+2. records system audio continuously
+3. splits it into 10-second WAV chunks
+4. transcribes completed chunks with whisper.cpp
+5. appends transcript text to output/transcript.txt
 
-Note its device number.
+Temporary chunks are stored under:
 
-That device can then be used by FFmpeg to record Zoom/system audio.
+output/audio/chunks/
 
-## 14. Transcription workflow
+Example:
 
-The intended audio pipeline is:
-
-```text
-Zoom
-  ↓
-Multi-Output Device
-  ├── headphones/speakers
-  └── BlackHole 2ch
-          ↓
-        FFmpeg
-          ↓
-        WAV
-          ↓
-     whisper.cpp
-          ↓
-output/transcript.txt
-```
-
-A `transcript.sh` script can hide all of the FFmpeg and Whisper arguments so the normal workflow only requires one command.
-
-## 15. Normal class workflow
-
-Capture slides whenever useful:
-
-```bash
-./sh/capture.sh 4
-```
-
-Run it repeatedly:
-
-```text
-output/Class4/Slides_001.png
-output/Class4/Slides_002.png
-output/Class4/Slides_003.png
+chunk_00000.wav
+chunk_00000.txt
+chunk_00001.wav
+chunk_00001.txt
 ...
-```
 
-If you want GPT context from the entire class screenshot folder:
+Press:
 
-```bash
+Ctrl+C
+
+to stop.
+
+15. Transcript Chunk Retention
+
+Because 10-second chunks grow quickly, transcript.sh should keep only a limited rolling history.
+
+For example:
+
+MAX_CHUNKS=20
+
+keeps approximately:
+
+20 × 10 seconds = 200 seconds
+
+or about 3 minutes 20 seconds of chunk history.
+
+The full accumulated session transcript can still remain in:
+
+output/transcript.txt
+
+16. Prompt Transcript Context
+
+prompt.py should read only the most recent transcript chunks.
+
+Recommended:
+
+MAX_TRANSCRIPT_CHUNKS = 5
+
+With 10-second chunks, this gives approximately the most recent:
+
+50 seconds
+
+of professor audio.
+
+Prompt priority is approximately:
+
+1. Most recent professor transcript
+2. Previous few transcript chunks
+3. Last/current slide
+4. Earlier slides
+
+17. Normal Class Workflow
+
+At the start of class:
+
+./sh/transcript.sh
+
+Leave it running in one terminal.
+
+Whenever you want to capture a slide:
+
+./sh/capture.sh 4
+
+If you need help using all captured Class 4 slides:
+
 ./sh/prompt.sh 4
-```
 
 If you only want slide 3:
 
-```bash
 ./sh/prompt.sh 4 3
-```
 
-The result is:
+Then open:
 
-```text
 output/prompt.txt
-```
 
-which can be pasted directly into ChatGPT.
+and paste it into ChatGPT.
 
-## 16. Git setup
+18. requirements.txt
 
-Recommended `.gitignore`:
+Keep it minimal:
 
-```gitignore
+Pillow
+pytesseract
+
+Install:
+
+./.venv/bin/python -m pip install -r requirements.txt
+
+To inspect everything installed in the venv:
+
+./.venv/bin/python -m pip freeze
+
+19. Recommended .gitignore
+
 .venv/
 output/
 whisper.cpp/
 __pycache__/
 *.pyc
 .DS_Store
-```
+test_blackhole.wav
 
-`whisper.cpp/` is excluded because it is its own Git repository.
+Quick Reference
 
-Then:
+Capture another Class 4 slide:
 
-```bash
-git add .
-git commit -m "Add class capture and prompt helper"
-git push
-```
-
-## Quick reference
-
-Capture another slide from Class 4:
-
-```bash
 ./sh/capture.sh 4
-```
 
 Generate a prompt from all Class 4 slides:
 
-```bash
 ./sh/prompt.sh 4
-```
 
-Generate a prompt from only Class 4 slide 3:
+Generate a prompt from Class 4, slide 3:
 
-```bash
 ./sh/prompt.sh 4 3
-```
 
-Activate Python manually if needed:
+Start live transcription:
 
-```bash
-source .venv/bin/activate
-```
+./sh/transcript.sh
+
+Install Python dependencies without activating the venv:
+
+./.venv/bin/python -m pip install -r requirements.txt
+
+Test OCR dependencies:
+
+./.venv/bin/python -c "import pytesseract; from PIL import Image; print('OCR works')"
 
 Test Whisper:
 
-```bash
 ./whisper.cpp/build/bin/whisper-cli \
   --no-gpu \
   --no-timestamps \
   -m ./whisper.cpp/models/ggml-base.en.bin \
-  -f test.wav
-```
-
-The goal is that all the ugly setup happens once. During class, the commands you actually need to remember should stay very small.
+  -f test_blackhole.wav
