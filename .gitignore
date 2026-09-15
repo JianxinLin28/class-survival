@@ -2,3 +2,6 @@ output/
 __pycache__/
 *.pyc
 .DS_Store
+.venv
+whisper.cpp
+audio
