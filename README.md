@@ -14,6 +14,7 @@ generating a GPT-ready prompt from slides + recent transcript context
 
 Project Structure
 
+```
 Root/
 ├── .venv/
 ├── whisper.cpp/
@@ -46,6 +47,7 @@ Root/
     ├── text.txt
     ├── transcript.txt
     └── prompt.txt
+```
 
 1. Install Homebrew Dependencies
 
