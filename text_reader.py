@@ -5,11 +5,23 @@ from PIL import Image, ImageOps
 import pytesseract
 
 
+# ------------------------------------------------------------
+# Configuration
+# ------------------------------------------------------------
+
 ROOT_DIR = Path(__file__).resolve().parent
+
 OUTPUT_DIR = ROOT_DIR / "output"
 OUTPUT_PATH = OUTPUT_DIR / "text.txt"
 
-def read_text_from_png(image_path):
+MAX_SLIDES = 5
+
+
+# ------------------------------------------------------------
+# OCR one image
+# ------------------------------------------------------------
+
+def read_text_from_png(image_path: Path) -> str:
     image = Image.open(image_path)
 
     # Convert to grayscale
@@ -27,6 +39,10 @@ def read_text_from_png(image_path):
 
     return clean_text(text)
 
+
+# ------------------------------------------------------------
+# Clean OCR output
+# ------------------------------------------------------------
 
 def clean_text(text: str) -> str:
     lines = []
@@ -60,48 +76,135 @@ def clean_text(text: str) -> str:
     return "\n".join(lines)
 
 
+# ------------------------------------------------------------
+# Collect PNG files from folder
+# ------------------------------------------------------------
+
+def get_recent_png_files(
+    input_path: Path,
+    max_slides: int,
+) -> list[Path]:
+
+    png_files = sorted(
+        input_path.glob("*.png")
+    )
+
+    if not png_files:
+        raise FileNotFoundError(
+            f"No PNG files found in: {input_path}"
+        )
+
+    # Only keep the most recent slides.
+    return png_files[-max_slides:]
+
+
+# ------------------------------------------------------------
+# Collect OCR text
+# ------------------------------------------------------------
+
 def collect_text(input_path: Path) -> str:
+
+    # --------------------------------------------------------
+    # Single slide
+    # --------------------------------------------------------
+
     if input_path.is_file():
         if input_path.suffix.lower() != ".png":
-            raise ValueError("Input file must be a PNG.")
+            raise ValueError(
+                "Input file must be a PNG."
+            )
 
-        return read_text_from_png(input_path)
+        print(
+            f"Reading slide: {input_path.name}"
+        )
+
+        return read_text_from_png(
+            input_path
+        )
+
+    # --------------------------------------------------------
+    # Folder of slides
+    # --------------------------------------------------------
 
     if input_path.is_dir():
-        png_files = sorted(input_path.glob("*.png"))
 
-        if not png_files:
-            raise FileNotFoundError(
-                f"No PNG files found in: {input_path}"
+        png_files = get_recent_png_files(
+            input_path,
+            MAX_SLIDES,
+        )
+
+        print(
+            f"Using {len(png_files)} "
+            f"most recent slide(s):"
+        )
+
+        for image_path in png_files:
+            print(
+                f"  - {image_path.name}"
             )
+
+        print()
 
         sections = []
 
         for image_path in png_files:
-            text = read_text_from_png(image_path)
-
-            sections.append(
-                f"=== {image_path.name} ===\n{text}"
+            print(
+                f"OCR: {image_path.name}"
             )
 
-        return "\n\n".join(sections)
+            text = read_text_from_png(
+                image_path
+            )
 
-    raise ValueError("Input must be a PNG file or folder.")
+            sections.append(
+                f"=== {image_path.name} ===\n"
+                f"{text}"
+            )
 
+        return "\n\n".join(
+            sections
+        )
+
+    raise ValueError(
+        "Input must be a PNG file or folder."
+    )
+
+
+# ------------------------------------------------------------
+# Main
+# ------------------------------------------------------------
 
 def main():
+
     if len(sys.argv) < 2:
         print("Usage:")
-        print("  python3 read_text.py <file-or-folder>")
-        return
-
-    input_path = Path(sys.argv[1])
-
-    if not input_path.exists():
-        print(f"Path does not exist: {input_path}")
+        print(
+            "  python3 text_reader.py "
+            "<file-or-folder>"
+        )
         sys.exit(1)
 
-    text = collect_text(input_path)
+    input_path = Path(
+        sys.argv[1]
+    )
+
+    if not input_path.exists():
+        print(
+            f"Path does not exist: "
+            f"{input_path}"
+        )
+        sys.exit(1)
+
+    try:
+        text = collect_text(
+            input_path
+        )
+
+    except Exception as error:
+        print(
+            f"Error: {error}"
+        )
+        sys.exit(1)
 
     OUTPUT_DIR.mkdir(
         parents=True,
@@ -113,7 +216,13 @@ def main():
         encoding="utf-8",
     )
 
-    print(f"Saved OCR result to: {OUTPUT_PATH.resolve()}")
+    print()
+    print(
+        "Saved OCR result to:"
+    )
+    print(
+        OUTPUT_PATH.resolve()
+    )
 
 
 if __name__ == "__main__":

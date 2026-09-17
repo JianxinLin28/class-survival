@@ -82,3 +82,13 @@ echo
 echo
 echo "Generated:"
 echo "$ROOT_DIR/output/prompt.txt"
+
+PROMPT_PATH="$ROOT_DIR/output/prompt.txt"
+
+pbcopy < "$PROMPT_PATH"
+
+echo
+echo "Generated:"
+echo "$PROMPT_PATH"
+echo
+echo "Prompt copied to clipboard."
