@@ -7,9 +7,10 @@ X = 0
 Y = 300
 BOTTOM = 50
 WIDTH = 780
-HEIGHT = 720-Y-BOTTOM
-FOLDER_NAME = "Class3"
+HEIGHT = 720 - Y - BOTTOM
+
 BASE_NAME = "Slide"
+
 
 def get_next_filename(folder: Path) -> Path:
     index = 1
@@ -21,6 +22,15 @@ def get_next_filename(folder: Path) -> Path:
             return output
 
         index += 1
+
+
+def get_latest_filename(folder: Path) -> Path | None:
+    files = sorted(folder.glob(f"{BASE_NAME}_*.png"))
+
+    if not files:
+        return None
+
+    return files[-1]
 
 
 def capture_region(
@@ -47,17 +57,24 @@ def capture_region(
 def main():
     if len(sys.argv) < 2:
         print("Usage:")
-        print("  python3 screen_shot.py <folder>")
+        print("  python3 screen_shot.py <folder> [-o]")
         return
 
     folder = Path(sys.argv[1])
+    overwrite = "-o" in sys.argv[2:]
 
     folder.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    output = get_next_filename(folder)
+    if overwrite:
+        output = get_latest_filename(folder)
+
+        if output is None:
+            output = get_next_filename(folder)
+    else:
+        output = get_next_filename(folder)
 
     capture_region(
         X,

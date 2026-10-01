@@ -12,6 +12,7 @@ ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 PYTHON="$ROOT_DIR/.venv/bin/python"
 
 CLASS="${1:-4}"
+MODE="${2:-}"
 FOLDER="Class${CLASS}"
 OUTPUT_PATH="$ROOT_DIR/output/$FOLDER"
 
@@ -50,8 +51,11 @@ mkdir -p "$OUTPUT_PATH"
 # Capture slide
 # ------------------------------------------------------------
 
-"$PYTHON" "$ROOT_DIR/screen_shot.py" "$OUTPUT_PATH"
-
+if [ "$MODE" = "-o" ]; then
+    "$PYTHON" "$ROOT_DIR/screen_shot.py" "$OUTPUT_PATH" -o
+else
+    "$PYTHON" "$ROOT_DIR/screen_shot.py" "$OUTPUT_PATH"
+fi
 
 echo
 echo "Capture saved under:"
